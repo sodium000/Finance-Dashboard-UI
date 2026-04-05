@@ -20,13 +20,13 @@ const App = () => {
 
   return (
     <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-      <div className="app-container min-h-screen bg-slate-50 flex opacity-0"> 
+      <div className="app-container min-h-screen bg-slate-50 flex flex-col md:flex-row opacity-0">
         <Sidebar />
 
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 flex flex-col min-w-0 w-full md:w-auto">
           <Navbar />
 
-          <main className="p-6 sm:p-10 ml-0 md:ml-64 space-y-10 overflow-y-auto">
+          <main className="flex-1 p-4 sm:p-6 md:p-8 md:ml-0 space-y-6 md:space-y-10 overflow-y-auto">
             <Routes>
               <Route path="/" element={<Dashboard />} />
               <Route path="/transactions" element={<Transactions />} />
