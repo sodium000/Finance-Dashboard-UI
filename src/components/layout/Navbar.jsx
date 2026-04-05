@@ -18,7 +18,7 @@ const Navbar = () => {
       </div>
 
       <div className="flex items-center space-x-6">
-        {/* Role Switcher */}
+
         <div className="flex bg-slate-100 p-1 rounded-xl items-center border border-slate-200">
           <button 
             onClick={() => setRole('admin')}
