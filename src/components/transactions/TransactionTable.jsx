@@ -10,8 +10,8 @@ const TransactionTable = () => {
   const [filterType, setFilterType] = useState('all');
 
   const filteredData = transactions.filter(t => {
-    const matchesSearch = t.category.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                        t.note.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = t.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      t.note.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = filterType === 'all' || t.type === filterType;
     return matchesSearch && matchesType;
   });
@@ -24,15 +24,15 @@ const TransactionTable = () => {
         <div className="flex items-center space-x-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-            <input 
-              type="text" 
-              placeholder="Search..." 
+            <input
+              type="text"
+              placeholder="Search..."
               className="pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary w-full md:w-64"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
-          <select 
+          <select
             className="px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary"
             value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
@@ -59,7 +59,7 @@ const TransactionTable = () => {
           <tbody className="divide-y divide-slate-100">
             <AnimatePresence>
               {filteredData.map((t, idx) => (
-                <motion.tr 
+                <motion.tr
                   key={t.id}
                   layout
                   initial={{ opacity: 0 }}
@@ -69,9 +69,8 @@ const TransactionTable = () => {
                 >
                   <td className="px-6 py-4">
                     <div className="flex items-center space-x-3">
-                      <div className={`p-2 rounded-lg ${
-                        t.type === 'income' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'
-                      }`}>
+                      <div className={`p-2 rounded-lg ${t.type === 'income' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'
+                        }`}>
                         {t.type === 'income' ? <ArrowUpRight size={18} /> : <ArrowDownLeft size={18} />}
                       </div>
                       <div>
@@ -88,9 +87,8 @@ const TransactionTable = () => {
                   <td className="px-6 py-4 text-sm text-slate-500">
                     {format(new Date(t.date), 'MMM dd, yyyy')}
                   </td>
-                  <td className={`px-6 py-4 font-bold text-sm ${
-                    t.type === 'income' ? 'text-emerald-600' : 'text-rose-600'
-                  }`}>
+                  <td className={`px-6 py-4 font-bold text-sm ${t.type === 'income' ? 'text-emerald-600' : 'text-rose-600'
+                    }`}>
                     {t.type === 'income' ? '+' : '-'}${t.amount.toFixed(2)}
                   </td>
                   {role === 'admin' && (
@@ -99,7 +97,7 @@ const TransactionTable = () => {
                         <button className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
                           <Edit2 size={16} />
                         </button>
-                        <button 
+                        <button
                           onClick={() => deleteTransaction(t.id)}
                           className="p-2 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
                         >
@@ -113,7 +111,7 @@ const TransactionTable = () => {
             </AnimatePresence>
           </tbody>
         </table>
-        
+
         {filteredData.length === 0 && (
           <div className="p-12 text-center">
             <div className="mx-auto w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center text-slate-300 mb-4">
