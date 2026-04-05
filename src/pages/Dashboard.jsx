@@ -52,7 +52,6 @@ const Dashboard = () => {
 
       <AddTransactionModal open={isModalOpen} handleClose={() => setIsModalOpen(false)} />
 
-      {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <SummaryCard 
           title="Total Balance" 
@@ -106,7 +105,6 @@ const Dashboard = () => {
         </motion.div>
       </div>
 
-      {/* Transactions Table Section */}
       <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
