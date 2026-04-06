@@ -7,35 +7,38 @@ import { gsap } from 'gsap';
 
 import Transactions from './pages/Transactions';
 import Insights from './pages/Insights';
+import { FinanceProvider } from './store/FinanceContext';
 
 const App = () => {
   useEffect(() => {
-    gsap.to('.app-container', { 
-      opacity: 1, 
-      duration: 0.8, 
+    gsap.to('.app-container', {
+      opacity: 1,
+      duration: 0.8,
       ease: 'power2.out',
       delay: 0.2
     });
   }, []);
 
   return (
-    <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-      <div className="app-container min-h-screen bg-slate-50 flex flex-col md:flex-row opacity-0">
-        <Sidebar />
+    <FinanceProvider>
+      <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+        <div className="app-container min-h-screen bg-slate-50 flex opacity-0 selection:bg-indigo-100">
+          <Sidebar />
 
-        <div className="flex-1 flex flex-col min-w-0 w-full md:w-auto">
-          <Navbar />
+          <div className="flex-1 flex flex-col min-w-0">
+            <Navbar />
 
-          <main className="flex-1 p-4 sm:p-6 md:p-8 md:ml-0 space-y-6 md:space-y-10 overflow-y-auto">
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/transactions" element={<Transactions />} />
-              <Route path="/insights" element={<Insights />} />
-            </Routes>
-          </main>
+            <main className="p-4 sm:p-6 md:pl-4 md:pr-8 md:py-8 ml-0 md:ml-64 space-y-10 overflow-y-auto">
+              <Routes>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/transactions" element={<Transactions />} />
+                <Route path="/insights" element={<Insights />} />
+              </Routes>
+            </main>
+          </div>
         </div>
-      </div>
-    </Router>
+      </Router>
+    </FinanceProvider>
   );
 };
 

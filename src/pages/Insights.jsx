@@ -19,14 +19,22 @@ import {
   Wallet,
   CheckCircle2,
   Trophy,
-  Activity
+  Activity,
+  Flame,
+  Crown,
+  MousePointer2,
+  Calendar,
+  Layers,
+  Search,
+  MessageSquareQuote
 } from 'lucide-react';
-import { useFinanceStore } from '../store/useFinanceStore';
+import { useFinance } from '../store/useFinance';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
+import { format, isSameMonth, parseISO, startOfMonth, subMonths } from 'date-fns';
 
 const Insights = () => {
-  const { transactions } = useFinanceStore();
-  const [activeTab, setActiveTab] = useState('overview');
+  const { transactions } = useFinance();
+  const [activeTab, setActiveTab] = useState('monthly');
   const [isSyncing, setIsSyncing] = useState(false);
 
   const handleSync = () => {
@@ -41,321 +49,241 @@ const Insights = () => {
     const savingsRate = income > 0 ? ((income - expenses) / income) * 100 : 0;
 
     const categoryTotals = {};
-    transactions.filter(t => t.type === 'expense').forEach(t => {
+    const expenseTransactions = transactions.filter(t => t.type === 'expense');
+    expenseTransactions.forEach(t => {
       categoryTotals[t.category] = (categoryTotals[t.category] || 0) + t.amount;
     });
-    const topCategory = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1])[0] || ['None', 0];
+    const topCategoryEntry = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1])[0] || ['None', 0];
+    const topCategory = topCategoryEntry[0];
+    const topCategoryAmount = topCategoryEntry[1];
 
-    return { income, expenses, balance, savingsRate, topCategory };
+    const marchExpenses = transactions
+      .filter(t => t.type === 'expense' && t.date.includes('2024-03'))
+      .reduce((acc, t) => acc + t.amount, 0);
+    const aprilExpenses = transactions
+      .filter(t => t.type === 'expense' && t.date.includes('2024-04'))
+      .reduce((acc, t) => acc + t.amount, 0);
+
+    const expenseGrowth = marchExpenses > 0 ? ((aprilExpenses - marchExpenses) / marchExpenses) * 100 : 0;
+
+    let observation = "Your cash flow is steady. You maintain a positive balance across all observed nodes.";
+    if (savingsRate < 20) observation = "Caution: Your savings rate is below the 20% benchmark. Review lifestyle flux targets.";
+    if (topCategoryAmount > (expenses * 0.5)) observation = `Priority Alert: ${topCategory} represents over 50% of your total spend. Optimization suggested.`;
+    if (balance > 5000) observation = "Elite Liquidity: You have significant idle capital. Consider rotating into Alpha Assets.";
+
+    return { income, expenses, balance, savingsRate, topCategory, topCategoryAmount, marchExpenses, aprilExpenses, expenseGrowth, observation };
   }, [transactions]);
 
   const cards = [
-    { title: 'Spending Health', value: 'Excellent', icon: Zap, color: 'text-emerald-500', bg: 'bg-emerald-50', border: 'border-emerald-100' },
-    { title: 'Savings Target', value: '75% Met', icon: Target, color: 'text-indigo-600', bg: 'bg-indigo-50', border: 'border-indigo-100' },
-    { title: 'Total Budgeted', value: '$8,250.00', icon: CircleDollarSign, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-100' }
+    { title: 'Capital Growth', value: `+${Math.abs(Math.round(insightsData.expenseGrowth))}%`, icon: TrendingUp, color: 'text-cyan-600', glow: 'shadow-cyan-500/10' },
+    { title: 'Spent Analysis', value: `${Math.round((insightsData.expenses / insightsData.income) * 100)}% Used`, icon: Activity, color: 'text-violet-600', glow: 'shadow-violet-500/10' },
+    { title: 'Safety Margin', value: `$${(insightsData.balance / 1000).toFixed(1)}k`, icon: ShieldCheck, color: 'text-emerald-600', glow: 'shadow-emerald-500/10' }
   ];
 
-  const recommendations = [
-    {
-      id: 1,
-      title: 'Reduce Coffee Spending',
-      desc: 'You spent 15% more on coffee this week than your average.',
-      potential: 'Save $45/mo',
-      icon: AlertCircle,
-      type: 'warning'
-    },
-    {
-      id: 2,
-      title: 'Auto-Invest Dividend',
-      desc: 'You have $500 in dividends waiting. Auto-investing can yield 8% annually.',
-      potential: 'Gain +$40/yr',
-      icon: TrendingUp,
-      type: 'opportunity'
-    },
-    {
-      id: 3,
-      title: 'Utility Bill Optimization',
-      desc: 'A better plan for your internet might save you over $20 monthly.',
-      potential: 'Save $240/yr',
-      icon: Lightbulb,
-      type: 'tip'
-    }
-  ];
-
-  const monthlyData = [
-    { name: 'Week 1', spending: 400 },
-    { name: 'Week 2', spending: 300 },
-    { name: 'Week 3', spending: 600 },
-    { name: 'Week 4', spending: 450 },
+  const chartData = [
+    { name: 'Mar (Mock)', value: insightsData.marchExpenses },
+    { name: 'Apr (Mock)', value: insightsData.aprilExpenses },
+    { name: 'Forecast', value: (insightsData.aprilExpenses * 0.9) },
   ];
 
   return (
-    <div className="max-w-[1400px] mx-auto space-y-10 pb-20 animate-in fade-in slide-in-from-bottom-4 duration-1000">
+    <div className="min-h-screen p-1 sm:p-2 bg-slate-50 text-slate-900 relative overflow-hidden font-sans rounded-t-[40px] md:rounded-none transition-colors duration-500">
+      <div className="absolute top-0 right-0 w-[400px] sm:w-[800px] h-[400px] sm:h-[800px] bg-violet-600/5 rounded-full blur-[100px] sm:blur-[150px] -mr-48 sm:-mr-96 -mt-48 sm:-mt-96" />
+      <div className="absolute bottom-0 left-0 w-[300px] sm:w-[600px] h-[300px] sm:h-[600px] bg-cyan-600/5 rounded-full blur-[80px] sm:blur-[120px] -ml-32 sm:-ml-64 -mb-32 sm:-mb-64" />
 
-      <section className="relative overflow-hidden group">
+      <div className=" space-y-8 sm:space-y-10 relative z-10">
 
-        <div className="absolute -right-20 -top-20 w-96 h-96 bg-indigo-500/10 rounded-full blur-[100px] group-hover:bg-indigo-500/20 transition-all duration-1000" />
-        <div className="absolute -left-20 -bottom-20 w-96 h-96 bg-rose-500/10 rounded-full blur-[100px] group-hover:bg-rose-500/20 transition-all duration-1000" />
-
-        <div className="relative flex flex-col md:flex-row md:items-end justify-between gap-4 md:gap-8 py-4">
-          <div className="space-y-3">
+        <section className="flex flex-col lg:flex-row lg:items-center justify-between gap-8 pt-4">
+          <div className="space-y-4">
             <motion.div
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="inline-flex items-center gap-2 px-3 md:px-4 py-1.5 rounded-full bg-slate-900 text-white text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-slate-900/20"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-violet-500/5 border border-violet-500/10 text-violet-600 text-[10px] font-black uppercase tracking-[0.2em]"
             >
-              <Sparkles size={14} className="text-amber-400" />
-              <span>Insights Engine 4.0</span>
+              <Crown size={12} className="fill-current" />
+              <span>Precision Analysis Engine</span>
             </motion.div>
-            <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight leading-[1.1]">
-              Financial <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-rose-600">Intelligence.</span>
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight leading-tight text-slate-900">
+              Insights <br />
+              <span className="bg-gradient-to-r from-cyan-600 via-violet-600 to-fuchsia-600 text-transparent bg-clip-text">Calculated.</span>
             </h1>
-            <p className="text-slate-500 max-w-lg font-medium text-sm md:text-lg leading-relaxed">
-              Deep dive into your financial habits. We've analyzed your 13 transactions to help you build a stronger portfolio.
+            <p className="text-slate-500 max-w-lg font-medium text-sm sm:text-base leading-relaxed">
+              Analyzing your 13 active session records. We've detected a <span className="text-indigo-600 font-bold">{Math.abs(Math.round(insightsData.expenseGrowth))}% {insightsData.expenseGrowth > 0 ? "increase" : "reduction"}</span> in monthly burn over the observation period.
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+          <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center">
             <button
               onClick={handleSync}
-              className="flex items-center justify-center gap-2 px-4 md:px-6 py-3 md:py-4 bg-white border border-slate-200 rounded-2xl md:rounded-3xl font-black text-[10px] md:text-[11px] uppercase tracking-widest text-slate-600 hover:border-slate-400 hover:text-slate-900 transition-all group w-full md:w-auto"
+              className="px-8 py-4 sm:py-4 bg-slate-900 text-white rounded-2xl font-black text-[11px] uppercase tracking-widest hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2 shadow-xl"
             >
-              <RefreshCcw size={16} className={`${isSyncing ? 'animate-spin' : 'group-hover:rotate-180 transition-transform duration-500'}`} />
-              <span>{isSyncing ? 'Analyzing...' : 'Recalculate'}</span>
+              <RefreshCcw size={16} className={isSyncing ? 'animate-spin' : ''} />
+              {isSyncing ? 'Recalculating...' : 'Refresh Insight Node'}
             </button>
-            <button className="flex items-center justify-center gap-2 px-6 md:px-8 py-3 md:py-4 bg-slate-900 text-white rounded-2xl md:rounded-3xl font-black text-[10px] md:text-[11px] uppercase tracking-widest shadow-2xl shadow-slate-900/20 hover:scale-[1.02] active:scale-95 transition-all w-full md:w-auto">
-              <Zap size={16} fill="currentColor" className="text-amber-400" />
-              <span className="hidden sm:inline">Full Analytics Report</span>
-              <span className="sm:hidden">Analytics</span>
-            </button>
+          </div>
+        </section>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8">
+
+          <motion.div
+            className="lg:col-span-8 bg-white/40 backdrop-blur-2xl border border-white rounded-[32px] sm:rounded-[48px] p-6 sm:p-10 relative group overflow-hidden shadow-2xl shadow-slate-200/50"
+          >
+            <div className="relative z-10 flex flex-col h-full justify-between">
+              <div className="flex flex-col sm:flex-row justify-between items-start gap-6">
+                <div>
+                  <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.4em] mb-2 leading-none">Monthly Comparison</p>
+                  <h2 className="text-4xl sm:text-5xl font-black text-slate-900 leading-none tracking-tight">
+                    ${insightsData.aprilExpenses.toLocaleString()} <span className="text-lg text-slate-400">vs</span> ${insightsData.marchExpenses.toLocaleString()}
+                  </h2>
+                  <div className="flex flex-wrap gap-1.5 mt-5">
+                    <span className={`px-2 py-1 rounded text-[9px] font-black tracking-widest uppercase ${insightsData.expenseGrowth > 0 ? 'bg-rose-50 text-rose-600' : 'bg-emerald-50 text-emerald-600'}`}>
+                      {insightsData.expenseGrowth > 0 ? 'Expense Up' : 'Expense Down'} {Math.abs(Math.round(insightsData.expenseGrowth))}%
+                    </span>
+                    <span className="px-2 py-1 rounded bg-indigo-50 text-indigo-600 text-[9px] font-black tracking-widest uppercase italic">Diagnostic: {insightsData.topCategory} heavy</span>
+                  </div>
+                </div>
+                <div className="p-3.5 sm:p-4 bg-indigo-600 text-white rounded-2xl sm:rounded-3xl shadow-lg shadow-indigo-100">
+                  <History size={24} />
+                </div>
+              </div>
+
+              <div className="mt-12 sm:mt-20 h-[220px] sm:h-[280px] -mx-4 sm:-mx-6">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartData}>
+                    <defs>
+                      <linearGradient id="glow" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#4F46E5" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#4F46E5" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <XAxis dataKey="name" hide />
+                    <Tooltip
+                      cursor={{ stroke: '#f1f5f9', strokeWidth: 2 }}
+                      contentStyle={{ backgroundColor: '#fff', borderRadius: '16px', border: 'none', padding: '12px', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
+                      itemStyle={{ color: '#0f172a', fontWeight: '900', fontSize: '10px', textTransform: 'uppercase' }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="value"
+                      stroke="#4F46E5"
+                      strokeWidth={6}
+                      fillOpacity={1}
+                      fill="url(#glow)"
+                      animationDuration={2000}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </motion.div>
+
+          <div className="lg:col-span-4 flex flex-col gap-6 sm:gap-8">
+            <motion.div className="bg-slate-900 border border-slate-800 p-8 rounded-[36px] flex flex-col h-full justify-between shadow-2xl relative overflow-hidden group">
+              <div className="relative z-10 space-y-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-indigo-500/20 text-indigo-400 rounded-xl">
+                    <MessageSquareQuote size={20} />
+                  </div>
+                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Key Observation</p>
+                </div>
+                <h3 className="text-xl font-black text-white leading-relaxed">
+                  "{insightsData.observation}"
+                </h3>
+              </div>
+              <div className="mt-10 flex items-center gap-4 relative z-10">
+                <div className="w-12 h-12 rounded-full border-2 border-indigo-500 flex items-center justify-center text-indigo-400">
+                  <ShieldCheck size={24} />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-white uppercase tracking-widest"> Analyst</p>
+                  <p className="text-[9px] text-slate-500 uppercase font-black">Verified Insight</p>
+                </div>
+              </div>
+              <div className="absolute -right-10 -bottom-10 w-32 h-32 bg-indigo-600/10 rounded-full blur-3xl group-hover:scale-150 transition-transform duration-1000" />
+            </motion.div>
+
+            <motion.div className="bg-white border border-slate-100 p-8 rounded-[36px] flex items-center justify-between transition-colors shadow-xl">
+              <div className="space-y-4">
+                <p className="text-[10px] font-black text-rose-500 uppercase tracking-widest leading-none">Highest Expenditure</p>
+                <div>
+                  <h4 className="text-3xl font-black text-slate-900 capitalize">{insightsData.topCategory}</h4>
+                  <p className="text-lg font-black text-slate-400">${insightsData.topCategoryAmount.toLocaleString()}</p>
+                </div>
+              </div>
+              <div className="w-16 h-16 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-500 group-hover:scale-110 transition-transform">
+                <Flame size={32} />
+              </div>
+            </motion.div>
           </div>
         </div>
-      </section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 md:gap-6 lg:gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 pb-10">
 
-        <motion.div
-          className="lg:col-span-1 bg-white p-6 md:p-8 rounded-[32px] md:rounded-[48px] border border-slate-100 shadow-2xl shadow-slate-200/50 flex flex-col items-center justify-center text-center space-y-6"
-          whileHover={{ y: -5 }}
-        >
-          <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em]">Health Factor</h3>
-          <div className="relative w-32 md:w-48 h-32 md:h-48 flex items-center justify-center">
-            <svg className="w-full h-full transform -rotate-90">
-              <circle cx="96" cy="96" r="88" stroke="currentColor" strokeWidth="12" fill="transparent" className="text-slate-50" />
-              <motion.circle
-                cx="96" cy="96" r="88" stroke="currentColor" strokeWidth="12" fill="transparent"
-                className="text-emerald-500"
-                strokeDasharray={552}
-                initial={{ strokeDashoffset: 552 }}
-                animate={{ strokeDashoffset: 552 - (552 * (insightsData.savingsRate / 100)) }}
-                transition={{ duration: 2, ease: "easeOut" }}
-              />
-            </svg>
-            <div className="absolute flex flex-col items-center">
-              <span className="text-3xl md:text-4xl font-black text-slate-900">{Math.round(insightsData.savingsRate)}%</span>
-              <span className="text-[9px] md:text-[10px] font-black text-emerald-500 uppercase tracking-widest">Savings Rate</span>
+          <div className="p-8 sm:p-10 bg-indigo-600 rounded-[48px] text-white space-y-6 relative overflow-hidden group shadow-2xl">
+            <div className="relative z-10">
+              <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center mb-6">
+                <PieChart size={32} className="text-amber-400" />
+              </div>
+              <h4 className="text-2xl font-black">Expense Breakdown</h4>
+              <p className="text-indigo-100/70 text-sm font-medium mt-2 leading-relaxed max-w-sm">
+                {insightsData.topCategory} accounts for approximately <span className="text-white font-black">{Math.round((insightsData.topCategoryAmount / insightsData.expenses) * 100)}%</span> of your total monthly expenditures.
+              </p>
+              <div className="mt-8 pt-8 border-t border-white/10 flex items-center justify-between">
+                <div>
+                  <p className="text-[10px] text-indigo-200 font-black uppercase mb-1">Efficiency Ratio</p>
+                  <p className="text-lg font-black">{Math.round(insightsData.savingsRate)}%</p>
+                </div>
+                <button className="flex items-center gap-2 px-6 py-3 bg-white text-indigo-600 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:scale-105 transition-all">
+                  Audit Pipeline <ChevronRight size={14} />
+                </button>
+              </div>
             </div>
-          </div>
-          <div className="space-y-1">
-            <p className="text-base md:text-lg font-black text-slate-800">Elite Tier Position</p>
-            <p className="text-xs text-slate-400 font-medium">Top 5% of our users track like you.</p>
-          </div>
-        </motion.div>
-
-        <motion.div
-          className="lg:col-span-3 bg-slate-900 rounded-[32px] md:rounded-[48px] p-6 md:p-10 text-white relative overflow-hidden shadow-2xl shadow-slate-900/40"
-          whileHover={{ y: -5 }}
-        >
-          <div className="absolute inset-0 opacity-20 pointer-events-none">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={monthlyData}>
-                <defs>
-                  <linearGradient id="colorSpend" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.8} />
-                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <Area type="monotone" dataKey="spending" stroke="#6366f1" fillOpacity={1} fill="url(#colorSpend)" />
-              </AreaChart>
-            </ResponsiveContainer>
+            <Sparkles size={180} className="absolute -right-20 -top-20 text-white opacity-5 group-hover:rotate-12 transition-transform duration-1000" />
           </div>
 
-          <div className="relative z-10 h-full flex flex-col justify-between">
-            <div className="flex flex-col md:flex-row justify-between items-start gap-4">
+          <div className="bg-white/40 backdrop-blur-2xl border border-white rounded-[48px] p-8 sm:p-10 flex flex-col justify-between shadow-2xl transition-colors">
+            <div className="flex items-center justify-between mb-8">
               <div className="space-y-1">
-                <p className="text-[10px] md:text-[11px] font-black text-indigo-400 uppercase tracking-[0.3em]">Capital Overview</p>
-                <h3 className="text-3xl md:text-5xl font-black">${insightsData.balance.toLocaleString()}</h3>
-                <p className="text-slate-400 flex items-center gap-1.5 text-xs">
-                  <Activity size={14} className="text-emerald-500" />
-                  Increased by 12.5% this month
-                </p>
+                <h3 className="text-xl sm:text-2xl font-black text-slate-900 leading-none">Fiscal Sentiment</h3>
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Calculated Sentiment Vector</p>
               </div>
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="text-left sm:text-right">
-                  <p className="text-[10px] text-slate-500 uppercase font-bold">Monthly Burn</p>
-                  <p className="text-rose-400 font-black text-lg">-${insightsData.expenses.toLocaleString()}</p>
-                </div>
-                <div className="text-left sm:text-right border-l sm:border-l border-slate-800 pl-4 sm:pl-4">
-                  <p className="text-[10px] text-slate-500 uppercase font-bold">Net Inflow</p>
-                  <p className="text-emerald-400 font-black text-lg">+${insightsData.income.toLocaleString()}</p>
-                </div>
-              </div>
+              <Activity size={24} className="text-emerald-500" />
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mt-8 md:mt-16 pt-4 md:pt-8 border-t border-slate-800/50">
-              <div>
-                <p className="text-[10px] text-slate-500 font-black uppercase mb-1">Top Category</p>
-                <p className="text-sm font-bold text-white">{insightsData.topCategory[0]}</p>
-              </div>
-              <div>
-                <p className="text-[10px] text-slate-500 font-black uppercase mb-1">Anomaly Detection</p>
-                <p className="text-sm font-bold text-emerald-400">Stable</p>
-              </div>
-              <div>
-                <p className="text-[10px] text-slate-500 font-black uppercase mb-1">Forecast</p>
-                <p className="text-sm font-bold text-white">+$2.1k Est.</p>
-              </div>
-              <div>
-                <p className="text-[10px] text-slate-500 font-black uppercase mb-1">Fiscal Safety</p>
-                <div className="flex gap-1">
-                  <div className="w-4 h-1.5 bg-emerald-500 rounded-full" />
-                  <div className="w-4 h-1.5 bg-emerald-500 rounded-full" />
-                  <div className="w-4 h-1.5 bg-emerald-500 rounded-full opacity-30" />
+            <div className="space-y-10 py-4">
+              <div className="flex items-center gap-6">
+                <div className="w-32 h-32 flex items-center justify-center relative shrink-0">
+                  <svg className="w-full h-full -rotate-90">
+                    <circle cx="64" cy="64" r="58" stroke="rgba(0,0,0,0.05)" strokeWidth="8" fill="transparent" />
+                    <circle
+                      cx="64" cy="64" r="58" stroke="#10b981" strokeWidth="8" fill="transparent"
+                      strokeDasharray={364}
+                      strokeDashoffset={364 - (364 * (insightsData.savingsRate / 100))}
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  <span className="absolute text-2xl font-black">{Math.round(insightsData.savingsRate)}%</span>
                 </div>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 lg:gap-10">
-
-        <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <h3 className="text-xl md:text-2xl font-black text-slate-900">Optimization Tips</h3>
-            <button className="text-[10px] md:text-[11px] font-black text-indigo-600 uppercase tracking-widest hover:text-indigo-700 text-left sm:text-right">View All Plans</button>
-          </div>
-
-          <div className="grid gap-4">
-            {recommendations.map((rec) => (
-              <motion.div
-                key={rec.id}
-                whileHover={{ x: 10 }}
-                className="bg-white border border-slate-100 p-4 md:p-6 rounded-[24px] md:rounded-[32px] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 md:gap-6 shadow-xl shadow-slate-200/20 group cursor-pointer"
-              >
-                <div className="flex items-start gap-4 md:gap-5">
-                  <div className={`p-3 md:p-4 rounded-xl md:rounded-2xl flex-shrink-0 ${rec.type === 'warning' ? 'bg-rose-50 text-rose-500' : rec.type === 'opportunity' ? 'bg-indigo-50 text-indigo-600' : 'bg-amber-50 text-amber-500'}`}>
-                    <rec.icon size={24} strokeWidth={2.5} />
-                  </div>
-                  <div className="space-y-1 flex-1">
-                    <h4 className="font-black text-slate-800 text-sm md:text-base">{rec.title}</h4>
-                    <p className="text-xs md:text-sm text-slate-400 font-medium leading-relaxed">{rec.desc}</p>
-                  </div>
-                </div>
-                <div className="text-left sm:text-right flex-shrink-0">
-                  <p className={`text-xs font-black uppercase tracking-widest ${rec.type === 'warning' ? 'text-rose-500' : 'text-emerald-500'}`}>
-                    {rec.potential}
+                <div className="space-y-2">
+                  <h4 className="text-lg font-black">Neutral Inflow</h4>
+                  <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                    Your current trajectory suggests a <span className="text-emerald-500 font-black">stable outcome</span> for the next 30-day node. No immediate corrective actions required.
                   </p>
-                  <div className="flex sm:justify-end mt-1 text-slate-300 group-hover:text-slate-900 transition-colors">
-                    <ChevronRight size={18} />
-                  </div>
                 </div>
-              </motion.div>
-            ))}
+              </div>
+            </div>
           </div>
         </div>
 
-        <div className="bg-white p-6 md:p-10 rounded-[32px] md:rounded-[48px] border border-slate-100 shadow-2xl shadow-slate-200/50 space-y-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="space-y-1">
-              <h3 className="text-xl md:text-2xl font-black text-slate-900">Budget Allocation</h3>
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Active Goals (4/5)</p>
-            </div>
-            <div className="p-3 bg-slate-50 rounded-2xl text-slate-400 w-fit">
-              <PieChart size={24} />
-            </div>
-          </div>
-
-          <div className="space-y-6 md:space-y-8">
-            {[
-              { name: 'Housing & Rent', used: 1200, limit: 1500, color: 'bg-indigo-600' },
-              { name: 'Food & Dining', used: 450, limit: 600, color: 'bg-emerald-500' },
-              { name: 'Transportation', used: 180, limit: 200, color: 'bg-amber-500' },
-              { name: 'Entertainment', used: 320, limit: 300, color: 'bg-rose-500' },
-            ].map((item) => (
-              <div key={item.name} className="space-y-2 md:space-y-3">
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-2">
-                  <div>
-                    <p className="text-xs md:text-sm font-black text-slate-800 leading-none mb-1">{item.name}</p>
-                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{Math.round((item.used / item.limit) * 100)}% Consumed</p>
-                  </div>
-                  <p className="text-xs md:text-sm font-black text-slate-900 w-fit">
-                    ${item.used} <span className="text-slate-300 font-bold">/ ${item.limit}</span>
-                  </p>
-                </div>
-                <div className="w-full h-3 bg-slate-50 rounded-full overflow-hidden border border-slate-100">
-                  <motion.div
-                    initial={{ width: 0 }}
-                    animate={{ width: `${Math.min((item.used / item.limit) * 100, 100)}%` }}
-                    transition={{ duration: 1.5, ease: "easeOut" }}
-                    className={`h-full rounded-full ${item.used > item.limit ? 'bg-rose-500' : item.color} shadow-lg shadow-black/5`}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <button className="w-full py-4 md:py-5 bg-slate-50 text-slate-800 rounded-2xl md:rounded-3xl font-black text-[10px] md:text-[11px] uppercase tracking-[0.2em] hover:bg-slate-100 transition-all border border-slate-200/50">
-            Update Budget Strategy
-          </button>
-        </div>
       </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 lg:gap-8 pb-10">
-        <motion.div whileHover={{ y: -8 }} className="p-6 md:p-8 bg-indigo-600 rounded-[28px] md:rounded-[40px] text-white space-y-6 relative overflow-hidden group shadow-2xl shadow-indigo-200">
-          <div className="relative z-10">
-            <Trophy size={32} className="text-amber-400 mb-4" />
-            <h4 className="text-lg md:text-xl font-black">Financial Milestone</h4>
-            <p className="text-indigo-100 text-xs md:text-sm font-medium mt-2 leading-relaxed">
-              You've maintained a positive balance for 4 months straight. This unlocks your "Fiscal Wizard" badge.
-            </p>
-            <button className="mt-6 md:mt-8 flex items-center gap-2 text-[9px] md:text-[10px] font-black uppercase tracking-widest bg-white/20 px-4 md:px-5 py-2 rounded-full hover:bg-white/30 transition-all">
-              Claim Reward <ArrowUpRight size={14} />
-            </button>
-          </div>
-          <CircleDollarSign size={180} className="absolute -right-20 -bottom-20 text-white opacity-10 group-hover:rotate-12 transition-transform duration-1000" />
-        </motion.div>
-
-        <motion.div whileHover={{ y: -8 }} className="p-6 md:p-8 bg-white border border-slate-100 rounded-[28px] md:rounded-[40px] space-y-6 shadow-2xl shadow-slate-200/40 relative group">
-          <div className="w-12 md:w-14 h-12 md:h-14 bg-rose-50 text-rose-500 rounded-xl md:rounded-2xl flex items-center justify-center group-hover:bg-rose-500 group-hover:text-white transition-all duration-500">
-            <ShieldCheck size={28} />
-          </div>
-          <h4 className="text-lg md:text-xl font-black text-slate-900">Security Insights</h4>
-          <p className="text-slate-400 text-xs md:text-sm font-medium leading-relaxed">
-            We've detected 2 recurring subscriptions you haven't used in 30 days. Cancel them to save extra.
-          </p>
-          <button className="text-rose-500 font-black text-[10px] md:text-[11px] uppercase tracking-widest flex items-center gap-2 hover:gap-3 transition-all">
-            Review Protection <ChevronRight size={16} />
-          </button>
-        </motion.div>
-
-        <motion.div whileHover={{ y: -8 }} className="p-6 md:p-8 bg-white border border-slate-100 rounded-[28px] md:rounded-[40px] space-y-6 shadow-2xl shadow-slate-200/40 relative group">
-          <div className="w-12 md:w-14 h-12 md:h-14 bg-amber-50 text-amber-500 rounded-xl md:rounded-2xl flex items-center justify-center group-hover:bg-amber-500 group-hover:text-white transition-all duration-500">
-            <Lightbulb size={28} />
-          </div>
-          <h4 className="text-lg md:text-xl font-black text-slate-900">Custom Alerts</h4>
-          <p className="text-slate-400 text-xs md:text-sm font-medium leading-relaxed">
-            Get notified when any single transaction exceeds $500. Set custom thresholds for peace of mind.
-          </p>
-          <button className="text-amber-500 font-black text-[10px] md:text-[11px] uppercase tracking-widest flex items-center gap-2 hover:gap-3 transition-all">
-            Setup Alerts <ChevronRight size={16} />
-          </button>
-        </motion.div>
-      </div>
-
     </div>
   );
 };
+
+const History = ({ size, className }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /><path d="M12 7v5l4 2" />
+  </svg>
+);
 
 export default Insights;

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Dialog, 
   DialogTitle, 
@@ -11,11 +11,11 @@ import {
   Grid
 } from '@mui/material';
 import { X } from 'lucide-react';
-import { useFinance } from '../../store/FinanceContext';
+import { useFinance } from '../../store/useFinance';
 import { categories } from '../../data/mockData';
 
-const AddTransactionModal = ({ open, handleClose }) => {
-  const { addTransaction } = useFinance();
+const TransactionModal = ({ open, handleClose, transactionToEdit = null }) => {
+  const { addTransaction, updateTransaction } = useFinance();
   const [formData, setFormData] = useState({
     type: 'expense',
     amount: '',
@@ -24,23 +24,40 @@ const AddTransactionModal = ({ open, handleClose }) => {
     note: ''
   });
 
+  useEffect(() => {
+    if (transactionToEdit) {
+      setFormData({
+        ...transactionToEdit,
+        date: transactionToEdit.date.split('T')[0] // Ensure date format is YYYY-MM-DD
+      });
+    } else {
+      setFormData({
+        type: 'expense',
+        amount: '',
+        category: '',
+        date: new Date().toISOString().split('T')[0],
+        note: ''
+      });
+    }
+  }, [transactionToEdit, open]);
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!formData.amount || !formData.category) return;
     
-    addTransaction({
-      ...formData,
-      id: Math.random().toString(36).substr(2, 9),
-      amount: parseFloat(formData.amount)
-    });
+    if (transactionToEdit) {
+      updateTransaction({
+        ...formData,
+        amount: parseFloat(formData.amount)
+      });
+    } else {
+      addTransaction({
+        ...formData,
+        id: Math.random().toString(36).substr(2, 9),
+        amount: parseFloat(formData.amount)
+      });
+    }
     handleClose();
-    setFormData({
-      type: 'expense',
-      amount: '',
-      category: '',
-      date: new Date().toISOString().split('T')[0],
-      note: ''
-    });
   };
 
   return (
@@ -54,7 +71,9 @@ const AddTransactionModal = ({ open, handleClose }) => {
       }}
     >
       <DialogTitle className="flex items-center justify-between">
-        <span className="text-xl font-bold text-slate-800">Add New Transaction</span>
+        <span className="text-xl font-bold text-slate-800">
+          {transactionToEdit ? 'Edit Transaction' : 'Add New Transaction'}
+        </span>
         <IconButton onClick={handleClose} size="small">
           <X size={20} />
         </IconButton>
@@ -135,9 +154,9 @@ const AddTransactionModal = ({ open, handleClose }) => {
             type="submit" 
             variant="contained" 
             disableElevation 
-            className="rounded-xl px-8 bg-primary hover:bg-indigo-700"
+            className="rounded-xl px-8 bg-indigo-600 hover:bg-indigo-700 text-white"
           >
-            Add Transaction
+            {transactionToEdit ? 'Update Details' : 'Initialize Node'}
           </Button>
         </DialogActions>
       </form>
@@ -145,4 +164,4 @@ const AddTransactionModal = ({ open, handleClose }) => {
   );
 };
 
-export default AddTransactionModal;
+export default TransactionModal;
